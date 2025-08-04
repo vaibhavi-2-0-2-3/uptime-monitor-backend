@@ -5,6 +5,9 @@ const authRoutes = require("./routes/auth");
 const cors = require("cors");
 const monitorRoutes = require("./routes/monitors");
 
+const startCron = require("./utils/cron");
+startCron(); // start uptime checks
+
 dotenv.config();
 connectDB();
 
