@@ -35,6 +35,10 @@ const MonitorSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    uptime: {
+      type: Number,
+      default: 0, // percentage
+    },
   },
   { timestamps: true }
 );
