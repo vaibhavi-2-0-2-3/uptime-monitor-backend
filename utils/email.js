@@ -4,8 +4,8 @@ const nodemailer = require("nodemailer");
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.ALERT_EMAIL, // Your email (e.g., uptimealerts@gmail.com)
-    pass: process.env.ALERT_PASSWORD, // App password (not your normal password)
+    user: process.env.ALERT_EMAIL,
+    pass: process.env.ALERT_PASSWORD,
   },
 });
 
