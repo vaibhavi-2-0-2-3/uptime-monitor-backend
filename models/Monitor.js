@@ -39,6 +39,10 @@ const MonitorSchema = new mongoose.Schema(
       type: Number,
       default: 0, // percentage
     },
+    isPaused: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );

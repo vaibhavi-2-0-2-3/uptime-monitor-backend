@@ -44,18 +44,48 @@ const getUserMonitors = async (req, res) => {
   }
 };
 
-// Update a monitor
-const updateMonitor = async (req, res) => {
+// Update a monitor (edit name/url)
+const editMonitor = async (req, res) => {
   try {
+    const { name, url } = req.body;
+    const update = {};
+    if (name) update.name = name;
+    if (url) {
+      try {
+        new URL(url);
+      } catch {
+        return res.status(400).json({ message: "Invalid URL format" });
+      }
+      update.url = url;
+    }
+    if (!name && !url) {
+      return res.status(400).json({ message: "Nothing to update" });
+    }
     const monitor = await Monitor.findOneAndUpdate(
       { _id: req.params.id, user: req.user.id },
-      req.body,
+      update,
       { new: true }
     );
     if (!monitor) return res.status(404).json({ message: "Monitor not found" });
     res.json(monitor);
   } catch (err) {
     res.status(500).json({ message: "Failed to update monitor" });
+  }
+};
+
+// Pause/resume a monitor
+const togglePauseMonitor = async (req, res) => {
+  try {
+    const monitor = await Monitor.findOne({
+      _id: req.params.id,
+      user: req.user.id,
+    });
+    if (!monitor) return res.status(404).json({ message: "Monitor not found" });
+    monitor.isPaused = !monitor.isPaused;
+    await monitor.save();
+    res.json(monitor);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to pause/resume monitor" });
   }
 };
 
@@ -76,6 +106,7 @@ const deleteMonitor = async (req, res) => {
 module.exports = {
   createMonitor,
   getUserMonitors,
-  updateMonitor,
+  editMonitor,
+  togglePauseMonitor,
   deleteMonitor,
 };

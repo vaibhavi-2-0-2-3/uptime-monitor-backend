@@ -11,6 +11,10 @@ const checkUptime = async () => {
 
     await Promise.all(
       monitors.map(async (monitor) => {
+        if (monitor.isPaused) {
+          console.log(`⏸️ Skipping paused monitor: ${monitor.name}`);
+          return;
+        }
         const start = Date.now();
         let status = "down";
         let responseCode = null;
