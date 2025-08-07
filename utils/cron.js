@@ -16,7 +16,7 @@ const checkUptime = async () => {
           return;
         }
         const start = Date.now();
-        let status = "down";
+        let status = "DOWN";
         let responseCode = null;
         let responseTime = null;
         let message = "";
@@ -29,7 +29,7 @@ const checkUptime = async () => {
           responseTime = Date.now() - start;
 
           if (res.status >= 200 && res.status < 300) {
-            status = "up";
+            status = "UP";
             message = "OK";
           } else {
             message = `Unexpected status code: ${res.status}`;
@@ -39,13 +39,12 @@ const checkUptime = async () => {
           responseTime = Date.now() - start;
         }
 
-        // Create log entry
+        // Store analytics log
         await MonitorLog.create({
           monitorId: monitor._id,
+          timestamp: new Date(),
           status,
-          responseCode,
           responseTime,
-          message,
         });
 
         // Calculate uptime percentage from recent logs
@@ -57,7 +56,7 @@ const checkUptime = async () => {
           .limit(1440); // Max 1440 checks (24 hours * 60 minutes)
 
         const totalChecks = recentLogs.length;
-        const upChecks = recentLogs.filter((log) => log.status === "up").length;
+        const upChecks = recentLogs.filter((log) => log.status === "UP").length;
         const uptimePercentage =
           totalChecks > 0 ? (upChecks / totalChecks) * 100 : 0;
 
@@ -65,26 +64,28 @@ const checkUptime = async () => {
         const oldStatus = monitor.status;
 
         // Update monitor status and uptime
-        monitor.status = status;
+        monitor.status = status.toLowerCase();
         monitor.lastCheckedAt = new Date();
         monitor.uptime = Math.round(uptimePercentage * 100) / 100; // Round to 2 decimal places
 
         // Handle alerts for status changes
-        const statusChanged = oldStatus !== status;
+        const statusChanged = oldStatus !== monitor.status;
         const shouldSendAlert =
-          status === "down" && (!monitor.isAlertSent || statusChanged);
+          monitor.status === "down" && (!monitor.isAlertSent || statusChanged);
 
         if (shouldSendAlert) {
           console.log(
-            `🔔 Alert condition met for ${monitor.name}: status=${status}, isAlertSent=${monitor.isAlertSent}, statusChanged=${statusChanged}`
+            `🔔 Alert condition met for ${monitor.name}: status=${monitor.status}, isAlertSent=${monitor.isAlertSent}, statusChanged=${statusChanged}`
           );
 
           const user = await User.findById(monitor.user);
           if (user && user.email) {
-            const subject = `🚨 [${status.toUpperCase()}] ${monitor.name}`;
+            const subject = `🚨 [${monitor.status.toUpperCase()}] ${
+              monitor.name
+            }`;
             const msg = `Monitor: ${monitor.name}\nURL: ${
               monitor.url
-            }\nStatus: ${status.toUpperCase()}\nChecked at: ${new Date().toLocaleString()}`;
+            }\nStatus: ${monitor.status.toUpperCase()}\nChecked at: ${new Date().toLocaleString()}`;
             console.log("🔔 Sending alert to:", user.email);
 
             try {
@@ -102,9 +103,11 @@ const checkUptime = async () => {
           }
 
           console.log(
-            `[ALERT] Monitor "${monitor.name}" is now ${status.toUpperCase()}`
+            `[ALERT] Monitor "${
+              monitor.name
+            }" is now ${monitor.status.toUpperCase()}`
           );
-        } else if (status === "up" && monitor.isAlertSent) {
+        } else if (monitor.status === "up" && monitor.isAlertSent) {
           // Reset alert flag when monitor comes back up
           monitor.isAlertSent = false;
           console.log(`🔄 Reset alert flag for ${monitor.name} (now UP)`);
@@ -113,7 +116,7 @@ const checkUptime = async () => {
         await monitor.save();
 
         console.log(
-          `Checked: ${monitor.name} (${monitor.url}) → ${status} (Uptime: ${monitor.uptime}%)`
+          `Checked: ${monitor.name} (${monitor.url}) → ${monitor.status} (Uptime: ${monitor.uptime}%)`
         );
       })
     );

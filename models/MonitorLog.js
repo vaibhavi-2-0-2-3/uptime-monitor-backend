@@ -6,23 +6,19 @@ const MonitorLogSchema = new mongoose.Schema({
     ref: "Monitor",
     required: true,
   },
-  status: {
-    type: String,
-    enum: ["up", "down"],
-    required: true,
-  },
-  responseCode: {
-    type: Number,
-  },
-  responseTime: {
-    type: Number, // in ms
-  },
-  message: {
-    type: String,
-  },
   timestamp: {
     type: Date,
     default: Date.now,
+    required: true,
+  },
+  status: {
+    type: String,
+    enum: ["UP", "DOWN"],
+    required: true,
+  },
+  responseTime: {
+    type: Number,
+    required: true,
   },
 });
 
