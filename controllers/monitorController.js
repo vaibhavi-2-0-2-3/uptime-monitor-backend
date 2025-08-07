@@ -156,6 +156,93 @@ const getMonitorLogs = async (req, res) => {
   }
 };
 
+// Get monitor response time history
+const getMonitorHistory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { range = "24h" } = req.query;
+    const userId = req.user.id;
+
+    // Validate monitor ownership
+    const monitor = await Monitor.findOne({ _id: id, user: userId });
+    if (!monitor) return res.status(404).json({ message: "Monitor not found" });
+
+    let since = new Date();
+    let limit = 1440; // Default: 24 hours worth of data (1 check per minute)
+
+    switch (range) {
+      case "7d":
+        since.setDate(since.getDate() - 7);
+        limit = 10080; // 7 days worth of data
+        break;
+      case "30d":
+        since.setDate(since.getDate() - 30);
+        limit = 43200; // 30 days worth of data
+        break;
+      default: // 24h
+        since.setHours(since.getHours() - 24);
+        limit = 1440;
+    }
+
+    // Fetch response time history
+    const logs = await MonitorLog.find({
+      monitorId: id,
+      timestamp: { $gte: since },
+    })
+      .select("timestamp responseTime status")
+      .sort({ timestamp: 1 })
+      .limit(limit)
+      .lean();
+
+    // Process data for chart
+    const chartData = logs.map((log) => ({
+      timestamp: log.timestamp,
+      responseTime: log.responseTime || 0,
+      status: log.status,
+      time: new Date(log.timestamp).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      date: new Date(log.timestamp).toLocaleDateString(),
+    }));
+
+    // Calculate statistics
+    const validResponseTimes = logs.filter(
+      (log) => log.responseTime && log.responseTime > 0
+    );
+    const avgResponse =
+      validResponseTimes.length > 0
+        ? Math.round(
+            validResponseTimes.reduce((sum, log) => sum + log.responseTime, 0) /
+              validResponseTimes.length
+          )
+        : 0;
+    const minResponse =
+      validResponseTimes.length > 0
+        ? Math.min(...validResponseTimes.map((log) => log.responseTime))
+        : 0;
+    const maxResponse =
+      validResponseTimes.length > 0
+        ? Math.max(...validResponseTimes.map((log) => log.responseTime))
+        : 0;
+
+    res.json({
+      data: chartData,
+      statistics: {
+        average: avgResponse,
+        minimum: minResponse,
+        maximum: maxResponse,
+        totalChecks: logs.length,
+        successfulChecks: logs.filter((log) => log.status === "UP").length,
+      },
+      range: range,
+    });
+  } catch (err) {
+    console.error("Error fetching monitor history:", err);
+    res.status(500).json({ message: "Failed to fetch monitor history" });
+  }
+};
+
 module.exports = {
   createMonitor,
   getUserMonitors,
@@ -163,4 +250,5 @@ module.exports = {
   togglePauseMonitor,
   deleteMonitor,
   getMonitorLogs,
+  getMonitorHistory,
 };

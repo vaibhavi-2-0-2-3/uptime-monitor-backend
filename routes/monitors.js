@@ -6,6 +6,7 @@ const {
   togglePauseMonitor,
   deleteMonitor,
   getMonitorLogs,
+  getMonitorHistory,
 } = require("../controllers/monitorController");
 const authMiddleware = require("../middleware/authMiddleware");
 
@@ -20,5 +21,6 @@ router.patch("/:id", editMonitor); // PATCH /api/monitors/:id (edit)
 router.patch("/:id/pause", togglePauseMonitor); // PATCH /api/monitors/:id/pause
 router.delete("/:id", deleteMonitor); // DELETE /api/monitors/:id
 router.get("/:id/logs", getMonitorLogs); // GET /api/monitors/:id/logs?range=24h|7d
+router.get("/:id/history", getMonitorHistory); // GET /api/monitors/:id/history?range=24h|7d|30d
 
 module.exports = router;
