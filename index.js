@@ -19,9 +19,20 @@ console.log("🔧 CORS Configuration:");
 console.log("   - Origin: http://localhost:5173");
 console.log("   - Credentials: true");
 
+const allowedOrigins = [
+  "http://localhost:5173", // Local dev
+  "https://uptime-monitor-beta.vercel.app", // Vercel deployed frontend
+];
+
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   })
 );
