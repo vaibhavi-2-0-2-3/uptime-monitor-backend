@@ -14,10 +14,6 @@ connectDB();
 
 const app = express();
 
-// Debug CORS configuration
-console.log("🔧 CORS Configuration:");
-console.log("   - Origin: http://localhost:5173");
-console.log("   - Credentials: true");
 
 const allowedOrigins = [
   "http://localhost:5173", // Local dev
@@ -38,6 +34,14 @@ app.use(
 );
 
 app.use(express.json());
+
+// Debug CORS configuration
+console.log("🔧 CORS Configuration:");
+console.log("   - Origin: http://localhost:5173");
+console.log("   - Credentials: true");
+console.log("🔧 CORS Configuration Allowed Origins:", allowedOrigins);
+
+
 
 // Request logging middleware
 app.use((req, res, next) => {
