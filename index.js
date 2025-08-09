@@ -14,19 +14,24 @@ connectDB();
 
 const app = express();
 
-
 const allowedOrigins = [
-  "http://localhost:5173", // Local dev
-  "https://uptime-monitor-beta.vercel.app", // Vercel deployed frontend
+  "http://localhost:5173",
+  "https://uptime-monitor-beta.vercel.app",
 ];
 
+// Allow dynamic check for subdomains and staging URLs
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
+      if (!origin) return callback(null, true);
+      if (
+        allowedOrigins.includes(origin) ||
+        /\.vercel\.app$/.test(new URL(origin).hostname)
+      ) {
+        return callback(null, true);
       } else {
-        callback(new Error("Not allowed by CORS"));
+        console.log(`❌ CORS blocked: ${origin}`);
+        return callback(new Error("Not allowed by CORS"));
       }
     },
     credentials: true,
@@ -40,8 +45,6 @@ console.log("🔧 CORS Configuration:");
 console.log("   - Origin: http://localhost:5173");
 console.log("   - Credentials: true");
 console.log("🔧 CORS Configuration Allowed Origins:", allowedOrigins);
-
-
 
 // Request logging middleware
 app.use((req, res, next) => {
